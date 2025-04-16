@@ -28,15 +28,25 @@ class CompanyDataSchema(BaseModel):
     id: str
     file_name: str
     company_name: Optional[str] = None
+    company_name_source: Optional[str] = None
     company_description: Optional[str] = None
+    company_description_source: Optional[str] = None
     company_business_model: Optional[str] = None
+    company_business_model_source: Optional[str] = None
     company_industry: Optional[str] = None
+    company_industry_source: Optional[str] = None
     management_team: Optional[str] = None
+    management_team_source: Optional[str] = None
     revenue: Optional[str] = None
+    revenue_source: Optional[str] = None
     revenue_growth: Optional[str] = None
+    revenue_growth_source: Optional[str] = None
     gross_profit: Optional[str] = None
+    gross_profit_source: Optional[str] = None
     ebitda: Optional[str] = None
+    ebitda_source: Optional[str] = None
     capex: Optional[str] = None
+    capex_source: Optional[str] = None
 
     model_config = {
         "from_attributes": True,
@@ -121,15 +131,25 @@ def create_company_data(data: CompanyDataSchema, db: Session = Depends(get_db)):
         id=data.id,
         file_name=data.file_name,
         company_name=data.company_name,
+        company_name_source=data.company_name_source,
         company_description=data.company_description,
+        company_description_source=data.company_description_source,
         company_business_model=data.company_business_model,
+        company_business_model_source=data.company_business_model_source,
         company_industry=data.company_industry,
+        company_industry_source=data.company_industry_source,
         management_team=data.management_team,
+        management_team_source=data.management_team_source,
         revenue=data.revenue,
+        revenue_source=data.revenue_source,
         revenue_growth=data.revenue_growth,
+        revenue_growth_source=data.revenue_growth_source,
         gross_profit=data.gross_profit,
+        gross_profit_source=data.gross_profit_source,
         ebitda=data.ebitda,
+        ebitda_source=data.ebitda_source,
         capex=data.capex,
+        capex_source=data.capex_source,
     )
     db.add(db_obj)
     db.commit()

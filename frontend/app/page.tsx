@@ -3,19 +3,31 @@ import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 import { fetchCompanyData, saveCompanyData } from "./api";
 
+type SortDirection = "ascending" | "descending";
+
 export interface CompanyData {
-  id: string; // Unique identifier for the row
-  fileName: string; // Name of the uploaded PDF file
+  id: string;
+  fileName: string;
   companyName: string | null;
+  companyNameSource: string | null;
   companyDescription: string | null;
+  companyDescriptionSource: string | null;
   companyBusinessModel: string | null;
+  companyBusinessModelSource: string | null;
   companyIndustry: string | null;
-  managementTeam: string | null; // Keep internal name, change display name
-  revenue: string | null; // Format like "$50M"
-  revenueGrowth: string | null; // Format like "25%"
+  companyIndustrySource: string | null;
+  managementTeam: string | null;
+  managementTeamSource: string | null;
+  revenue: string | null;
+  revenueSource: string | null;
+  revenueGrowth: string | null;
+  revenueGrowthSource: string | null;
   grossProfit: string | null;
+  grossProfitSource: string | null;
   ebitda: string | null;
+  ebitdaSource: string | null;
   capex: string | null;
+  capexSource: string | null;
 }
 
 interface FileProgress {
@@ -24,8 +36,6 @@ interface FileProgress {
   isProcessing: boolean;
   error?: string; // Optional error message
 }
-
-type SortDirection = "ascending" | "descending";
 
 interface SortConfig {
   key: keyof CompanyData | null;
@@ -146,6 +156,11 @@ const App: React.FC = () => {
     }
   }
 
+  function getSourceString(pages: number[]) {
+    const incrementedPages = pages.map((page) => page + 1);
+    return `Page(s) ${incrementedPages.join(", ")}`;
+  }
+
   const handleUploadAndProcess = async () => {
     if (selectedFiles.length === 0) {
       console.warn("Please select PDF files to upload.");
@@ -224,15 +239,47 @@ const App: React.FC = () => {
           id: crypto.randomUUID(),
           fileName: file.name,
           companyName: jsonParsed.companyName?.value ?? null,
+          companyNameSource: jsonParsed.companyName?.source?.length
+            ? getSourceString(jsonParsed.companyName.source)
+            : null,
           companyDescription: jsonParsed.companyDescription?.value ?? null,
+          companyDescriptionSource: jsonParsed.companyDescription?.source
+            ?.length
+            ? getSourceString(jsonParsed.companyDescription.source)
+            : null,
           companyBusinessModel: jsonParsed.companyBusinessModel?.value ?? null,
+          companyBusinessModelSource: jsonParsed.companyBusinessModel?.source
+            ?.length
+            ? getSourceString(jsonParsed.companyBusinessModel.source)
+            : null,
           companyIndustry: jsonParsed.companyIndustry?.value ?? null,
+          companyIndustrySource: jsonParsed.companyIndustry?.source?.length
+            ? getSourceString(jsonParsed.companyIndustry.source)
+            : null,
           managementTeam: jsonParsed.managementTeam?.value ?? null,
+          managementTeamSource: jsonParsed.managementTeam?.source?.length
+            ? getSourceString(jsonParsed.managementTeam.source)
+            : null,
           revenue: jsonParsed.revenue?.value ?? null,
+          revenueSource: jsonParsed.revenue?.source?.length
+            ? getSourceString(jsonParsed.revenue.source)
+            : null,
           revenueGrowth: jsonParsed.revenueGrowth?.value ?? null,
+          revenueGrowthSource: jsonParsed.revenueGrowth?.source?.length
+            ? getSourceString(jsonParsed.revenueGrowth.source)
+            : null,
           grossProfit: jsonParsed.grossProfit?.value ?? null,
+          grossProfitSource: jsonParsed.grossProfit?.source?.length
+            ? getSourceString(jsonParsed.grossProfit.source)
+            : null,
           ebitda: jsonParsed.ebitda?.value ?? null,
+          ebitdaSource: jsonParsed.ebitda?.source?.length
+            ? getSourceString(jsonParsed.ebitda.source)
+            : null,
           capex: jsonParsed.capex?.value ?? null,
+          capexSource: jsonParsed.capex?.source?.length
+            ? getSourceString(jsonParsed.capex.source)
+            : null,
         };
 
         // STEP 3: mark complete
@@ -643,7 +690,7 @@ const App: React.FC = () => {
                 filteredAndSortedData.map((data) => (
                   <tr
                     key={data.id}
-                    className="hover:bg-gray-50 transition-colors"
+                    // className="hover:bg-gray-50 transition-colors"
                   >
                     {/* Render cells based on column definition order */}
                     <td
@@ -656,36 +703,145 @@ const App: React.FC = () => {
                       {data.companyName ?? "---"}
                     </td>
                     <td
-                      className="px-4 py-4 text-sm text-gray-600 max-w-xs truncate"
-                      title={data.companyDescription ?? ""}
+                      className="
+                        px-4 py-4 text-sm text-gray-600 max-w-xs truncate
+                        cursor-pointer
+                        hover:bg-gray-100
+                        transition-colors duration-150
+                      "
+                      title={
+                        data.companyDescriptionSource
+                          ? "Source: " + data.companyDescriptionSource
+                          : "No source available"
+                      }
                     >
                       {data.companyDescription ?? "---"}
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                    <td
+                      className="
+                        px-4 py-4 text-sm text-gray-600 max-w-xs truncate
+                        cursor-pointer
+                        hover:bg-gray-100
+                        transition-colors duration-150
+                      "
+                      title={
+                        data.companyBusinessModelSource
+                          ? "Source: " + data.companyBusinessModelSource
+                          : "No source available"
+                      }
+                    >
                       {data.companyBusinessModel ?? "---"}
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+
+                    <td
+                      className="
+                        px-4 py-4 text-sm text-gray-600 max-w-xs truncate
+                        cursor-pointer
+                        hover:bg-gray-100
+                        transition-colors duration-150
+                      "
+                      title={
+                        data.companyIndustrySource
+                          ? "Source: " + data.companyIndustrySource
+                          : "No source available"
+                      }
+                    >
                       {data.companyIndustry ?? "---"}
                     </td>
+
                     <td
-                      className="px-4 py-4 text-sm text-gray-600 max-w-xs truncate"
-                      title={data.managementTeam ?? ""}
+                      className="
+                        px-4 py-4 text-sm text-gray-600 max-w-xs truncate
+                        cursor-pointer
+                        hover:bg-gray-100
+                        transition-colors duration-150
+                      "
+                      title={
+                        data.managementTeamSource
+                          ? "Source: " + data.managementTeamSource
+                          : "No source available"
+                      }
                     >
                       {data.managementTeam ?? "---"}
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+
+                    <td
+                      className="
+                        px-4 py-4 text-sm text-gray-600 max-w-xs truncate
+                        cursor-pointer
+                        hover:bg-gray-100
+                        transition-colors duration-150
+                      "
+                      title={
+                        data.revenueSource
+                          ? "Source: " + data.revenueSource
+                          : "No source available"
+                      }
+                    >
                       {data.revenue ?? "---"}
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+
+                    <td
+                      className="
+                        px-4 py-4 text-sm text-gray-600 max-w-xs truncate
+                        cursor-pointer
+                        hover:bg-gray-100
+                        transition-colors duration-150
+                      "
+                      title={
+                        data.revenueGrowthSource
+                          ? "Source: " + data.revenueGrowthSource
+                          : "No source available"
+                      }
+                    >
                       {data.revenueGrowth ?? "---"}
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+
+                    <td
+                      className="
+                        px-4 py-4 text-sm text-gray-600 max-w-xs truncate
+                        cursor-pointer
+                        hover:bg-gray-100
+                        transition-colors duration-150
+                      "
+                      title={
+                        data.grossProfitSource
+                          ? "Source: " + data.grossProfitSource
+                          : "No source available"
+                      }
+                    >
                       {data.grossProfit ?? "---"}
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+
+                    <td
+                      className="
+                        px-4 py-4 text-sm text-gray-600 max-w-xs truncate
+                        cursor-pointer
+                        hover:bg-gray-100
+                        transition-colors duration-150
+                      "
+                      title={
+                        data.ebitdaSource
+                          ? "Source: " + data.ebitdaSource
+                          : "No source available"
+                      }
+                    >
                       {data.ebitda ?? "---"}
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+
+                    <td
+                      className="
+                        px-4 py-4 text-sm text-gray-600 max-w-xs truncate
+                        cursor-pointer
+                        hover:bg-gray-100
+                        transition-colors duration-150
+                      "
+                      title={
+                        data.capexSource
+                          ? "Source: " + data.capexSource
+                          : "No source available"
+                      }
+                    >
                       {data.capex ?? "---"}
                     </td>
                   </tr>
