@@ -1,9 +1,9 @@
 "use client";
-// import { getMessage } from "@/utils/api";
 import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
+import { fetchCompanyData, saveCompanyData } from "./api";
 
-interface CompanyData {
+export interface CompanyData {
   id: string; // Unique identifier for the row
   fileName: string; // Name of the uploaded PDF file
   companyName: string | null;
@@ -79,6 +79,16 @@ const SortIcon: React.FC<{ direction: SortDirection | null }> = ({
 
 const App: React.FC = () => {
   const [companyDataList, setCompanyDataList] = useState<CompanyData[]>([]);
+
+  // Load all company data from Postgres on mount
+  useEffect(() => {
+    fetchCompanyData()
+      .then((data) => setCompanyDataList(data))
+      .catch((err) => {
+        console.error("Failed to fetch company data:", err);
+      });
+  }, []);
+
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [sortConfig, setSortConfig] = useState<SortConfig>({
@@ -247,7 +257,20 @@ const App: React.FC = () => {
       }
     }
 
-    setCompanyDataList((prevList) => [...prevList, ...processedData]);
+    // Save each processed row to backend and update state
+    for (const data of processedData) {
+      try {
+        await saveCompanyData(data);
+      } catch (err) {
+        console.error("Failed to save company data:", err);
+      }
+    }
+    // After saving, fetch the latest data from backend
+    fetchCompanyData()
+      .then((data) => setCompanyDataList(data))
+      .catch((err) => {
+        console.error("Failed to fetch company data:", err);
+      });
     setSelectedFiles([]);
     setFileProgress([]);
     console.log("Finished processing all selected files.");

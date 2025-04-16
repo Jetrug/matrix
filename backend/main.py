@@ -1,10 +1,16 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pyzerox import zerox
 from openai import OpenAI
+import sys
 import os
 import json
 import aiofiles
+from typing import List, Optional
+from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from backend.database import CompanyData, get_db
 
 app = FastAPI()
 llm = OpenAI()
@@ -16,6 +22,29 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# --- CompanyData Pydantic schema ---
+class CompanyDataSchema(BaseModel):
+    id: str
+    file_name: str
+    company_name: Optional[str] = None
+    company_description: Optional[str] = None
+    company_business_model: Optional[str] = None
+    company_industry: Optional[str] = None
+    management_team: Optional[str] = None
+    revenue: Optional[str] = None
+    revenue_growth: Optional[str] = None
+    gross_profit: Optional[str] = None
+    ebitda: Optional[str] = None
+    capex: Optional[str] = None
+
+    model_config = {
+        "from_attributes": True,
+        "populate_by_name": True,
+        "alias_generator": lambda s: "".join(
+            [s.split("_")[0]] + [w.capitalize() for w in s.split("_")[1:]]
+        ),
+    }
 
 # Initialize ZeroX
 # custom_system_prompt = "For the following PDF file, extract the company name, description, business model, industry, management team, revenue, revenue growth, gross profit, EBITDA, CAPEX. Return the data in JSON format."
@@ -78,3 +107,31 @@ async def parse_data(strings: list[str], columns: list[str]):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# --- GET endpoint to fetch all company data ---
+@app.get("/api/company-data", response_model=List[CompanyDataSchema])
+def get_company_data(db: Session = Depends(get_db)):
+    db_objs = db.query(CompanyData).order_by(CompanyData.created_at.desc()).all()
+    return [CompanyDataSchema.from_orm(obj) for obj in db_objs]
+
+# --- POST endpoint to add new company data ---
+@app.post("/api/company-data", response_model=CompanyDataSchema)
+def create_company_data(data: CompanyDataSchema, db: Session = Depends(get_db)):
+    db_obj = CompanyData(
+        id=data.id,
+        file_name=data.file_name,
+        company_name=data.company_name,
+        company_description=data.company_description,
+        company_business_model=data.company_business_model,
+        company_industry=data.company_industry,
+        management_team=data.management_team,
+        revenue=data.revenue,
+        revenue_growth=data.revenue_growth,
+        gross_profit=data.gross_profit,
+        ebitda=data.ebitda,
+        capex=data.capex,
+    )
+    db.add(db_obj)
+    db.commit()
+    db.refresh(db_obj)
+    return CompanyDataSchema.from_orm(db_obj)
