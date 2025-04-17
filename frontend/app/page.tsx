@@ -171,11 +171,10 @@ const App: React.FC = () => {
       prevProgress.map((fp) => ({ ...fp, isProcessing: true, progress: 0 }))
     );
 
-    const processedData: CompanyData[] = []; // All processed documents
-
-    for (const file of selectedFiles) {
+    // Process all files in parallel, updating UI as each finishes
+    selectedFiles.forEach(async (file) => {
       const progressEntry = fileProgress.find((fp) => fp.file === file);
-      if (!progressEntry) continue;
+      if (!progressEntry) return;
 
       try {
         console.log(`Uploading and processing: ${file.name}`);
@@ -287,7 +286,21 @@ const App: React.FC = () => {
           prev.map((fp) => (fp.file === file ? { ...fp, progress: 100 } : fp))
         );
 
-        processedData.push(data);
+        // Save processed row to backend
+        try {
+          await saveCompanyData(data);
+        } catch (err) {
+          console.error("Failed to save company data:", err);
+        }
+
+        // Update table immediately
+        setCompanyDataList((prevList) => [data, ...prevList]);
+
+        // Remove file from selectedFiles and fileProgress
+        setSelectedFiles((prevFiles) => prevFiles.filter((f) => f !== file));
+        setFileProgress((prevProgress) =>
+          prevProgress.filter((fp) => fp.file !== file)
+        );
       } catch (error: any) {
         console.error("Error processing file:", error);
         setFileProgress((prevProgress) =>
@@ -302,25 +315,8 @@ const App: React.FC = () => {
           )
         );
       }
-    }
-
-    // Save each processed row to backend and update state
-    for (const data of processedData) {
-      try {
-        await saveCompanyData(data);
-      } catch (err) {
-        console.error("Failed to save company data:", err);
-      }
-    }
-    // After saving, fetch the latest data from backend
-    fetchCompanyData()
-      .then((data) => setCompanyDataList(data))
-      .catch((err) => {
-        console.error("Failed to fetch company data:", err);
-      });
-    setSelectedFiles([]);
-    setFileProgress([]);
-    console.log("Finished processing all selected files.");
+    });
+    console.log("Started processing all selected files.");
   };
 
   const filteredAndSortedData = useMemo(() => {
