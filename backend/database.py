@@ -19,31 +19,22 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 class CompanyData(Base):
-    __tablename__ = "company_data_3"
+    __tablename__ = "company_data_4"
     
     id = Column(String, primary_key=True)
     file_name = Column(String, nullable=False)
     company_name = Column(String, nullable=True)
-    company_name_source = Column(String, nullable=True)
     company_description = Column(Text, nullable=True)
-    company_description_source = Column(String, nullable=True)
     company_business_model = Column(String, nullable=True)
-    company_business_model_source = Column(String, nullable=True)
     company_industry = Column(String, nullable=True)
-    company_industry_source = Column(String, nullable=True)
     management_team = Column(Text, nullable=True)
-    management_team_source = Column(String, nullable=True)
     revenue = Column(String, nullable=True)
-    revenue_source = Column(String, nullable=True)
     revenue_growth = Column(String, nullable=True)
-    revenue_growth_source = Column(String, nullable=True)
     gross_profit = Column(String, nullable=True)
-    gross_profit_source = Column(String, nullable=True)
     ebitda = Column(String, nullable=True)
-    ebitda_source = Column(String, nullable=True)
     capex = Column(String, nullable=True)
-    capex_source = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
 # Create all tables
 Base.metadata.create_all(bind=engine)
 

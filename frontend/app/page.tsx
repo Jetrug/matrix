@@ -6,28 +6,18 @@ import { fetchCompanyData, saveCompanyData } from "./api";
 type SortDirection = "ascending" | "descending";
 
 export interface CompanyData {
-  id: string;
-  fileName: string;
+  id: string; // Unique identifier for the row
+  fileName: string; // Name of the uploaded PDF file
   companyName: string | null;
-  companyNameSource: string | null;
   companyDescription: string | null;
-  companyDescriptionSource: string | null;
   companyBusinessModel: string | null;
-  companyBusinessModelSource: string | null;
   companyIndustry: string | null;
-  companyIndustrySource: string | null;
-  managementTeam: string | null;
-  managementTeamSource: string | null;
-  revenue: string | null;
-  revenueSource: string | null;
-  revenueGrowth: string | null;
-  revenueGrowthSource: string | null;
+  managementTeam: string | null; // Keep internal name, change display name
+  revenue: string | null; // Format like "$50M"
+  revenueGrowth: string | null; // Format like "25%"
   grossProfit: string | null;
-  grossProfitSource: string | null;
   ebitda: string | null;
-  ebitdaSource: string | null;
   capex: string | null;
-  capexSource: string | null;
 }
 
 interface FileProgress {
@@ -106,6 +96,10 @@ const App: React.FC = () => {
     direction: "ascending",
   });
   const [fileProgress, setFileProgress] = useState<FileProgress[]>([]);
+  const [expandedCell, setExpandedCell] = useState<{
+    rowId: string;
+    colKey: keyof CompanyData;
+  } | null>(null);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     setSelectedFiles((prevFiles) => [...prevFiles, ...acceptedFiles]);
@@ -156,9 +150,17 @@ const App: React.FC = () => {
     }
   }
 
-  function getSourceString(pages: number[]) {
-    const incrementedPages = pages.map((page) => page + 1);
-    return `Page(s) ${incrementedPages.join(", ")}`;
+  // Returns parsed array of value/source objects, or empty array
+  function getOptionInfo(values: string | null) {
+    if (!values) return [];
+    let arr;
+    try {
+      arr = JSON.parse(values);
+    } catch {
+      return [];
+    }
+    if (!Array.isArray(arr)) return [];
+    return arr;
   }
 
   const handleUploadAndProcess = async () => {
@@ -183,7 +185,7 @@ const App: React.FC = () => {
         await new Promise((resolve) => setTimeout(resolve, 100));
         setFileProgress((prevProgress) =>
           prevProgress.map((fp) =>
-            fp.file === file ? { ...fp, progress: 50 } : fp
+            fp.file === file ? { ...fp, progress: 33 } : fp
           )
         );
 
@@ -203,7 +205,7 @@ const App: React.FC = () => {
         console.log(`Contents of ${file.name}:`, pageContents);
 
         setFileProgress((prev) =>
-          prev.map((fp) => (fp.file === file ? { ...fp, progress: 50 } : fp))
+          prev.map((fp) => (fp.file === file ? { ...fp, progress: 67 } : fp))
         );
 
         const columns = [
@@ -237,49 +239,35 @@ const App: React.FC = () => {
         const data: CompanyData = {
           id: crypto.randomUUID(),
           fileName: file.name,
-          companyName: jsonParsed.companyName?.value ?? null,
-          companyNameSource: jsonParsed.companyName?.source?.length
-            ? getSourceString(jsonParsed.companyName.source)
+          companyName: jsonParsed.companyName
+            ? JSON.stringify(jsonParsed.companyName)
             : null,
-          companyDescription: jsonParsed.companyDescription?.value ?? null,
-          companyDescriptionSource: jsonParsed.companyDescription?.source
-            ?.length
-            ? getSourceString(jsonParsed.companyDescription.source)
+          companyDescription: jsonParsed.companyDescription
+            ? JSON.stringify(jsonParsed.companyDescription)
             : null,
-          companyBusinessModel: jsonParsed.companyBusinessModel?.value ?? null,
-          companyBusinessModelSource: jsonParsed.companyBusinessModel?.source
-            ?.length
-            ? getSourceString(jsonParsed.companyBusinessModel.source)
+          companyBusinessModel: jsonParsed.companyBusinessModel
+            ? JSON.stringify(jsonParsed.companyBusinessModel)
             : null,
-          companyIndustry: jsonParsed.companyIndustry?.value ?? null,
-          companyIndustrySource: jsonParsed.companyIndustry?.source?.length
-            ? getSourceString(jsonParsed.companyIndustry.source)
+          companyIndustry: jsonParsed.companyIndustry
+            ? JSON.stringify(jsonParsed.companyIndustry)
             : null,
-          managementTeam: jsonParsed.managementTeam?.value ?? null,
-          managementTeamSource: jsonParsed.managementTeam?.source?.length
-            ? getSourceString(jsonParsed.managementTeam.source)
+          managementTeam: jsonParsed.managementTeam
+            ? JSON.stringify(jsonParsed.managementTeam)
             : null,
-          revenue: jsonParsed.revenue?.value ?? null,
-          revenueSource: jsonParsed.revenue?.source?.length
-            ? getSourceString(jsonParsed.revenue.source)
+          revenue: jsonParsed.revenue
+            ? JSON.stringify(jsonParsed.revenue)
             : null,
-          revenueGrowth: jsonParsed.revenueGrowth?.value ?? null,
-          revenueGrowthSource: jsonParsed.revenueGrowth?.source?.length
-            ? getSourceString(jsonParsed.revenueGrowth.source)
+          revenueGrowth: jsonParsed.revenueGrowth
+            ? JSON.stringify(jsonParsed.revenueGrowth)
             : null,
-          grossProfit: jsonParsed.grossProfit?.value ?? null,
-          grossProfitSource: jsonParsed.grossProfit?.source?.length
-            ? getSourceString(jsonParsed.grossProfit.source)
+          grossProfit: jsonParsed.grossProfit
+            ? JSON.stringify(jsonParsed.grossProfit)
             : null,
-          ebitda: jsonParsed.ebitda?.value ?? null,
-          ebitdaSource: jsonParsed.ebitda?.source?.length
-            ? getSourceString(jsonParsed.ebitda.source)
-            : null,
-          capex: jsonParsed.capex?.value ?? null,
-          capexSource: jsonParsed.capex?.source?.length
-            ? getSourceString(jsonParsed.capex.source)
-            : null,
+          ebitda: jsonParsed.ebitda ? JSON.stringify(jsonParsed.ebitda) : null,
+          capex: jsonParsed.capex ? JSON.stringify(jsonParsed.capex) : null,
         };
+
+        console.log("Final parsed data:", data);
 
         // STEP 3: mark complete
         setFileProgress((prev) =>
@@ -683,165 +671,452 @@ const App: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                filteredAndSortedData.map((data) => (
-                  <tr
-                    key={data.id}
-                    // className="hover:bg-gray-50 transition-colors"
-                  >
-                    {/* Render cells based on column definition order */}
-                    <td
-                      className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 font-medium truncate"
-                      title={data.fileName}
-                    >
-                      {data.fileName.replace(".pdf", "")}
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {data.companyName ?? "---"}
-                    </td>
-                    <td
-                      className="
-                        px-4 py-4 text-sm text-gray-600 max-w-xs truncate
-                        cursor-pointer
-                        hover:bg-gray-100
-                        transition-colors duration-150
-                      "
-                      title={
-                        data.companyDescriptionSource
-                          ? "Source: " + data.companyDescriptionSource
-                          : "No source available"
-                      }
-                    >
-                      {data.companyDescription ?? "---"}
-                    </td>
-                    <td
-                      className="
-                        px-4 py-4 text-sm text-gray-600 max-w-xs truncate
-                        cursor-pointer
-                        hover:bg-gray-100
-                        transition-colors duration-150
-                      "
-                      title={
-                        data.companyBusinessModelSource
-                          ? "Source: " + data.companyBusinessModelSource
-                          : "No source available"
-                      }
-                    >
-                      {data.companyBusinessModel ?? "---"}
-                    </td>
+                filteredAndSortedData.map((data) => {
+                  const companyNameArr = getOptionInfo(data.companyName);
+                  const companyDescriptionArr = getOptionInfo(
+                    data.companyDescription
+                  );
+                  const companyBusinessModelArr = getOptionInfo(
+                    data.companyBusinessModel
+                  );
+                  const companyIndustryArr = getOptionInfo(
+                    data.companyIndustry
+                  );
+                  const managementTeamArr = getOptionInfo(data.managementTeam);
+                  const revenueArr = getOptionInfo(data.revenue);
+                  const revenueGrowthArr = getOptionInfo(data.revenueGrowth);
+                  const grossProfitArr = getOptionInfo(data.grossProfit);
+                  const ebitdaArr = getOptionInfo(data.ebitda);
+                  const capexArr = getOptionInfo(data.capex);
 
-                    <td
-                      className="
-                        px-4 py-4 text-sm text-gray-600 max-w-xs truncate
-                        cursor-pointer
-                        hover:bg-gray-100
-                        transition-colors duration-150
-                      "
-                      title={
-                        data.companyIndustrySource
-                          ? "Source: " + data.companyIndustrySource
-                          : "No source available"
-                      }
+                  // Chevron SVGs
+                  const ChevronRight = (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={2}
+                      stroke="currentColor"
+                      className="w-4 h-4 text-gray-400 inline-block ml-1 align-middle float-right"
+                      style={{ verticalAlign: "middle" }}
                     >
-                      {data.companyIndustry ?? "---"}
-                    </td>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  );
+                  const ChevronDown = (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={2}
+                      stroke="currentColor"
+                      className="w-4 h-4 text-gray-400 inline-block ml-1 align-middle float-right"
+                      style={{ verticalAlign: "middle" }}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M5 9l7 7 7-7"
+                      />
+                    </svg>
+                  );
 
-                    <td
-                      className="
-                        px-4 py-4 text-sm text-gray-600 max-w-xs truncate
-                        cursor-pointer
-                        hover:bg-gray-100
-                        transition-colors duration-150
-                      "
-                      title={
-                        data.managementTeamSource
-                          ? "Source: " + data.managementTeamSource
-                          : "No source available"
-                      }
-                    >
-                      {data.managementTeam ?? "---"}
-                    </td>
+                  // Render cell: all cells (except fileName) are clickable to expand
+                  function renderCell(
+                    arr: any[],
+                    rowId: string,
+                    colKey: keyof CompanyData
+                  ) {
+                    const isExpanded =
+                      expandedCell &&
+                      expandedCell.rowId === rowId &&
+                      expandedCell.colKey === colKey;
 
-                    <td
-                      className="
-                        px-4 py-4 text-sm text-gray-600 max-w-xs truncate
-                        cursor-pointer
-                        hover:bg-gray-100
-                        transition-colors duration-150
-                      "
-                      title={
-                        data.revenueSource
-                          ? "Source: " + data.revenueSource
-                          : "No source available"
-                      }
-                    >
-                      {data.revenue ?? "---"}
-                    </td>
+                    // Show first value, and chevron if multiple
+                    const first = arr[0];
+                    const value =
+                      first && typeof first === "object" && "value" in first
+                        ? first.value
+                        : first ?? "";
+                    const hasMultiple = arr.length > 1;
+                    const source =
+                      first && typeof first === "object" && "source" in first
+                        ? first.source
+                        : undefined;
 
-                    <td
-                      className="
-                        px-4 py-4 text-sm text-gray-600 max-w-xs truncate
-                        cursor-pointer
-                        hover:bg-gray-100
-                        transition-colors duration-150
-                      "
-                      title={
-                        data.revenueGrowthSource
-                          ? "Source: " + data.revenueGrowthSource
-                          : "No source available"
-                      }
-                    >
-                      {data.revenueGrowth ?? "---"}
-                    </td>
+                    return (
+                      <button
+                        type="button"
+                        className="flex items-center justify-between w-full text-left focus:outline-none"
+                        onClick={() =>
+                          isExpanded
+                            ? setExpandedCell(null)
+                            : setExpandedCell({ rowId, colKey })
+                        }
+                        tabIndex={0}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          padding: 0,
+                          margin: 0,
+                        }}
+                      >
+                        <span className="truncate flex-1">
+                          {value && value.length ? value : "---"}
+                        </span>
+                        {/* Only show chevron if hasMultiple, else nothing */}
+                        {hasMultiple
+                          ? isExpanded
+                            ? ChevronDown
+                            : ChevronRight
+                          : null}
+                      </button>
+                    );
+                  }
 
-                    <td
-                      className="
-                        px-4 py-4 text-sm text-gray-600 max-w-xs truncate
-                        cursor-pointer
-                        hover:bg-gray-100
-                        transition-colors duration-150
-                      "
-                      title={
-                        data.grossProfitSource
-                          ? "Source: " + data.grossProfitSource
-                          : "No source available"
-                      }
-                    >
-                      {data.grossProfit ?? "---"}
-                    </td>
+                  // Helper to render expanded cell content as multiple rows/cells, with correct value/source mapping
+                  function renderExpandedRows(
+                    arr: any[],
+                    colKey: keyof CompanyData
+                  ) {
+                    if (arr.length > 1) {
+                      return arr.map((item, idx) => {
+                        const value =
+                          item && typeof item === "object" && "value" in item
+                            ? item.value
+                            : item ?? "";
+                        const source =
+                          item && typeof item === "object" && "source" in item
+                            ? item.source
+                            : undefined;
+                        return (
+                          <tr key={idx}>
+                            {columns.map((col) =>
+                              col.key === colKey ? (
+                                <td
+                                  key={col.key}
+                                  colSpan={1}
+                                  className="bg-gray-50 px-4 py-3"
+                                  style={{
+                                    minWidth: 180,
+                                    maxWidth: 320,
+                                    fontWeight: 500,
+                                  }}
+                                  title={
+                                    source
+                                      ? "Source: Page " + source
+                                      : "No source available"
+                                  }
+                                >
+                                  <span
+                                    className="text-gray-600 text-sm break-words"
+                                    style={{ whiteSpace: "pre-line" }}
+                                  >
+                                    {`${idx + 1}. ${
+                                      value && value.length ? value : "---"
+                                    }`}
+                                  </span>
+                                </td>
+                              ) : (
+                                <td key={col.key}></td>
+                              )
+                            )}
+                          </tr>
+                        );
+                      });
+                    } else {
+                      // Single value, render as one row/cell
+                      const item = arr[0];
+                      const value =
+                        item && typeof item === "object" && "value" in item
+                          ? item.value
+                          : item ?? "";
+                      const source =
+                        item && typeof item === "object" && "source" in item
+                          ? item.source
+                          : undefined;
+                      return (
+                        <tr>
+                          {columns.map((col) =>
+                            col.key === colKey ? (
+                              <td
+                                key={col.key}
+                                colSpan={1}
+                                className="bg-gray-50 px-4 py-3"
+                                style={{
+                                  minWidth: 180,
+                                  maxWidth: 320,
+                                  fontWeight: 500,
+                                }}
+                                title={
+                                  source
+                                    ? "Source: Page " + source
+                                    : "No source available"
+                                }
+                              >
+                                <span
+                                  className="text-gray-700 text-sm break-words"
+                                  style={{ whiteSpace: "pre-line" }}
+                                >
+                                  {value && value.length ? value : "---"}
+                                </span>
+                              </td>
+                            ) : (
+                              <td key={col.key}></td>
+                            )
+                          )}
+                        </tr>
+                      );
+                    }
+                  }
 
-                    <td
-                      className="
-                        px-4 py-4 text-sm text-gray-600 max-w-xs truncate
-                        cursor-pointer
-                        hover:bg-gray-100
-                        transition-colors duration-150
-                      "
-                      title={
-                        data.ebitdaSource
-                          ? "Source: " + data.ebitdaSource
-                          : "No source available"
-                      }
-                    >
-                      {data.ebitda ?? "---"}
-                    </td>
+                  return (
+                    <React.Fragment key={data.id}>
+                      <tr>
+                        {/* Render cells based on column definition order */}
+                        <td
+                          className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 font-medium truncate"
+                          title={data.fileName}
+                        >
+                          {data.fileName.replace(".pdf", "")}
+                        </td>
 
-                    <td
-                      className="
-                        px-4 py-4 text-sm text-gray-600 max-w-xs truncate
-                        cursor-pointer
-                        hover:bg-gray-100
-                        transition-colors duration-150
-                      "
-                      title={
-                        data.capexSource
-                          ? "Source: " + data.capexSource
-                          : "No source available"
-                      }
-                    >
-                      {data.capex ?? "---"}
-                    </td>
-                  </tr>
-                ))
+                        <td
+                          className="
+                            px-4 py-4 text-sm text-gray-600 max-w-xs truncate
+                            cursor-pointer
+                            hover:bg-gray-100
+                            transition-colors duration-150
+                          "
+                          title={
+                            companyNameArr[0] &&
+                            typeof companyNameArr[0] === "object" &&
+                            "source" in companyNameArr[0]
+                              ? "Source: Page " + companyNameArr[0].source
+                              : "No source available"
+                          }
+                        >
+                          {renderCell(companyNameArr, data.id, "companyName")}
+                        </td>
+
+                        <td
+                          className="
+                            px-4 py-4 text-sm text-gray-600 max-w-xs truncate
+                            cursor-pointer
+                            hover:bg-gray-100
+                            transition-colors duration-150
+                          "
+                          title={
+                            companyDescriptionArr[0] &&
+                            typeof companyDescriptionArr[0] === "object" &&
+                            "source" in companyDescriptionArr[0]
+                              ? "Source: Page " +
+                                companyDescriptionArr[0].source
+                              : "No source available"
+                          }
+                        >
+                          {renderCell(
+                            companyDescriptionArr,
+                            data.id,
+                            "companyDescription"
+                          )}
+                        </td>
+
+                        <td
+                          className="
+                            px-4 py-4 text-sm text-gray-600 max-w-xs truncate
+                            cursor-pointer
+                            hover:bg-gray-100
+                            transition-colors duration-150
+                          "
+                          title={
+                            companyBusinessModelArr[0] &&
+                            typeof companyBusinessModelArr[0] === "object" &&
+                            "source" in companyBusinessModelArr[0]
+                              ? "Source: Page " +
+                                companyBusinessModelArr[0].source
+                              : "No source available"
+                          }
+                        >
+                          {renderCell(
+                            companyBusinessModelArr,
+                            data.id,
+                            "companyBusinessModel"
+                          )}
+                        </td>
+
+                        <td
+                          className="
+                            px-4 py-4 text-sm text-gray-600 max-w-xs truncate
+                            cursor-pointer
+                            hover:bg-gray-100
+                            transition-colors duration-150
+                          "
+                          title={
+                            companyIndustryArr[0] &&
+                            typeof companyIndustryArr[0] === "object" &&
+                            "source" in companyIndustryArr[0]
+                              ? "Source: Page " + companyIndustryArr[0].source
+                              : "No source available"
+                          }
+                        >
+                          {renderCell(
+                            companyIndustryArr,
+                            data.id,
+                            "companyIndustry"
+                          )}
+                        </td>
+
+                        <td
+                          className="
+                            px-4 py-4 text-sm text-gray-600 max-w-xs truncate
+                            cursor-pointer
+                            hover:bg-gray-100
+                            transition-colors duration-150
+                          "
+                          title={
+                            managementTeamArr[0] &&
+                            typeof managementTeamArr[0] === "object" &&
+                            "source" in managementTeamArr[0]
+                              ? "Source: Page " + managementTeamArr[0].source
+                              : "No source available"
+                          }
+                        >
+                          {renderCell(
+                            managementTeamArr,
+                            data.id,
+                            "managementTeam"
+                          )}
+                        </td>
+
+                        <td
+                          className="
+                            px-4 py-4 text-sm text-gray-600 max-w-xs truncate
+                            cursor-pointer
+                            hover:bg-gray-100
+                            transition-colors duration-150
+                          "
+                          title={
+                            revenueArr[0] &&
+                            typeof revenueArr[0] === "object" &&
+                            "source" in revenueArr[0]
+                              ? "Source: Page " + revenueArr[0].source
+                              : "No source available"
+                          }
+                        >
+                          {renderCell(revenueArr, data.id, "revenue")}
+                        </td>
+
+                        <td
+                          className="
+                            px-4 py-4 text-sm text-gray-600 max-w-xs truncate
+                            cursor-pointer
+                            hover:bg-gray-100
+                            transition-colors duration-150
+                          "
+                          title={
+                            revenueGrowthArr[0] &&
+                            typeof revenueGrowthArr[0] === "object" &&
+                            "source" in revenueGrowthArr[0]
+                              ? "Source: Page " + revenueGrowthArr[0].source
+                              : "No source available"
+                          }
+                        >
+                          {renderCell(
+                            revenueGrowthArr,
+                            data.id,
+                            "revenueGrowth"
+                          )}
+                        </td>
+
+                        <td
+                          className="
+                            px-4 py-4 text-sm text-gray-600 max-w-xs truncate
+                            cursor-pointer
+                            hover:bg-gray-100
+                            transition-colors duration-150
+                          "
+                          title={
+                            grossProfitArr[0] &&
+                            typeof grossProfitArr[0] === "object" &&
+                            "source" in grossProfitArr[0]
+                              ? "Source: Page " + grossProfitArr[0].source
+                              : "No source available"
+                          }
+                        >
+                          {renderCell(grossProfitArr, data.id, "grossProfit")}
+                        </td>
+
+                        <td
+                          className="
+                            px-4 py-4 text-sm text-gray-600 max-w-xs truncate
+                            cursor-pointer
+                            hover:bg-gray-100
+                            transition-colors duration-150
+                          "
+                          title={
+                            ebitdaArr[0] &&
+                            typeof ebitdaArr[0] === "object" &&
+                            "source" in ebitdaArr[0]
+                              ? "Source: Page " + ebitdaArr[0].source
+                              : "No source available"
+                          }
+                        >
+                          {renderCell(ebitdaArr, data.id, "ebitda")}
+                        </td>
+
+                        <td
+                          className="
+                            px-4 py-4 text-sm text-gray-600 max-w-xs truncate
+                            cursor-pointer
+                            hover:bg-gray-100
+                            transition-colors duration-150
+                          "
+                          title={
+                            capexArr[0] &&
+                            typeof capexArr[0] === "object" &&
+                            "source" in capexArr[0]
+                              ? "Source: Page " + capexArr[0].source
+                              : "No source available"
+                          }
+                        >
+                          {renderCell(capexArr, data.id, "capex")}
+                        </td>
+                      </tr>
+                      {/* Expanded row for the expanded cell, only one per table */}
+                      {expandedCell &&
+                        expandedCell.rowId === data.id &&
+                        (() => {
+                          // Find which column is expanded
+                          const colKey = expandedCell.colKey;
+                          const optionMap: Partial<
+                            Record<keyof CompanyData, any>
+                          > = {
+                            fileName: null,
+                            companyName: companyNameArr,
+                            companyDescription: companyDescriptionArr,
+                            companyBusinessModel: companyBusinessModelArr,
+                            companyIndustry: companyIndustryArr,
+                            managementTeam: managementTeamArr,
+                            revenue: revenueArr,
+                            revenueGrowth: revenueGrowthArr,
+                            grossProfit: grossProfitArr,
+                            ebitda: ebitdaArr,
+                            capex: capexArr,
+                          };
+                          const expandedArr = optionMap[colKey];
+                          // Show expanded row(s) for any cell except fileName
+                          if (!expandedArr || expandedArr.length === 0)
+                            return null;
+                          return renderExpandedRows(expandedArr, colKey);
+                        })()}
+                    </React.Fragment>
+                  );
+                })
               )}
             </tbody>
           </table>

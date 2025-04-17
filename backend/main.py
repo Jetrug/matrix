@@ -28,25 +28,15 @@ class CompanyDataSchema(BaseModel):
     id: str
     file_name: str
     company_name: Optional[str] = None
-    company_name_source: Optional[str] = None
     company_description: Optional[str] = None
-    company_description_source: Optional[str] = None
     company_business_model: Optional[str] = None
-    company_business_model_source: Optional[str] = None
     company_industry: Optional[str] = None
-    company_industry_source: Optional[str] = None
     management_team: Optional[str] = None
-    management_team_source: Optional[str] = None
     revenue: Optional[str] = None
-    revenue_source: Optional[str] = None
     revenue_growth: Optional[str] = None
-    revenue_growth_source: Optional[str] = None
     gross_profit: Optional[str] = None
-    gross_profit_source: Optional[str] = None
     ebitda: Optional[str] = None
-    ebitda_source: Optional[str] = None
     capex: Optional[str] = None
-    capex_source: Optional[str] = None
 
     model_config = {
         "from_attributes": True,
@@ -57,13 +47,8 @@ class CompanyDataSchema(BaseModel):
     }
 
 # Initialize ZeroX
-# custom_system_prompt = "For the following PDF file, extract the company name, description, business model, industry, management team, revenue, revenue growth, gross profit, EBITDA, CAPEX. Return the data in JSON format."
 custom_system_prompt = "For the following PDF file, extract key company information and most importantly hard numerical/financial figures. Exclude other content from the page, cap each page's word count at 25"
 model = "gpt-4o"
-
-@app.get("/")
-def read_root():
-    return {"message": "Import files to extract and organize data"}
 
 @app.post("/api/extract")
 async def extract_data(file: UploadFile = File(...)):
@@ -102,7 +87,7 @@ async def parse_data(strings: list[str], columns: list[str]):
             raise HTTPException(status_code=500, detail="OpenAI API key not set")
 
         prompt = (
-            "Extract key company information and hard numerical/financial figures from the following text. Try to get the following fields along with a confidence score (%) and a source (array index within Text) for each. Return output in JSON format with key=field and obj having props value,confidence,source. If no value can be explicitly matched, use a 'best guess' based on full context, reflect this in the confidence score and add another field 'guess' = true. If guess can not be made, use empty string for value. For percentage fields, use only the number followed by % (assume or convert YoY) and for monetary fields, use the currency followed by the figure followed by K/M/B if applicable\n\n"
+            "Extract key company information and hard numerical/financial figures from the following text. Try to find matches for each of the following fields, along with a confidence score (%) and a source (array index within Text) for each. Return output in JSON format with key=field and value being an array of matches, each match having props value,confidence,source (order array by highest confidence). If no value can be explicitly matched, use a 'best guess' based on full context, reflect this in the confidence score and add another field 'guess' = true. If guess can not be made, use empty string for value. For percentage fields, use only the number followed by % (assume or convert YoY) and for monetary fields, use the currency followed by the figure followed by K/M/B if applicable\n\n"
             #   Cap output to 100 words.\n\n"
             f"Fields: {json.dumps(columns)}\n\n"
             f"Text: {json.dumps(strings)}\n"
@@ -131,25 +116,15 @@ def create_company_data(data: CompanyDataSchema, db: Session = Depends(get_db)):
         id=data.id,
         file_name=data.file_name,
         company_name=data.company_name,
-        company_name_source=data.company_name_source,
         company_description=data.company_description,
-        company_description_source=data.company_description_source,
         company_business_model=data.company_business_model,
-        company_business_model_source=data.company_business_model_source,
         company_industry=data.company_industry,
-        company_industry_source=data.company_industry_source,
         management_team=data.management_team,
-        management_team_source=data.management_team_source,
         revenue=data.revenue,
-        revenue_source=data.revenue_source,
         revenue_growth=data.revenue_growth,
-        revenue_growth_source=data.revenue_growth_source,
         gross_profit=data.gross_profit,
-        gross_profit_source=data.gross_profit_source,
         ebitda=data.ebitda,
-        ebitda_source=data.ebitda_source,
         capex=data.capex,
-        capex_source=data.capex_source,
     )
     db.add(db_obj)
     db.commit()
